@@ -51,9 +51,11 @@ jobs:
           tags: |
             type=raw,value=${{ matrix.ROS_DISTRO }}
 
+      # AMD64 build
       - if: github.event_name == 'push'
         name: Build and push (non PR)
         uses: docker/bake-action@v5.7.0
+        id: build-amd64
         env:
           BUILDX_ROS_DISTRO: ${{ matrix.ROS_DISTRO }}
           BUILDX_GITHUB_REPO: ${{ github.repository }}
@@ -63,8 +65,38 @@ jobs:
             ${{ steps.meta.outputs.bake-file }}
           push: ${{ env.PUSH }}
           set: |
-            *.cache-from=type=registry,ref=ghcr.io/${{ github.repository }}:cache-${{ matrix.ROS_DISTRO }}
-            *.cache-to=type=registry,mode=max,ref=ghcr.io/${{ github.repository }}:cache-${{ matrix.ROS_DISTRO }}
+            *.platform = ["linux/amd64"]
+            *.cache-from=type=registry,ref=ghcr.io/${{ github.repository }}:cache-amd64-${{ matrix.ROS_DISTRO }}
+            *.cache-to=type=registry,mode=max,ref=ghcr.io/${{ github.repository }}:cache-amd64-${{ matrix.ROS_DISTRO }}
+
+      # ARM64 build
+      - if: github.event_name == 'push'
+        name: Build and push (non PR)
+        uses: docker/bake-action@v5.7.0
+        id: build-arm64
+        env:
+          BUILDX_ROS_DISTRO: ${{ matrix.ROS_DISTRO }}
+          BUILDX_GITHUB_REPO: ${{ github.repository }}
+        with:
+          files: |
+            ./docker-bake.hcl
+            ${{ steps.meta.outputs.bake-file }}
+          push: ${{ env.PUSH }}
+          set: |
+            *.platform = ["linux/arm64"]
+            *.cache-from=type=registry,ref=ghcr.io/${{ github.repository }}:cache-arm64-${{ matrix.ROS_DISTRO }}
+            *.cache-to=type=registry,mode=max,ref=ghcr.io/${{ github.repository }}:cache-arm64-${{ matrix.ROS_DISTRO }}
+
+
+      - if: github.event_name == 'push'
+        name: Create multi-platform manifest
+        uses: int128/docker-manifest-create-action@v2
+        with:
+          tags: ghcr.io/${{ github.repository }}:main
+          sources: |
+            ghcr.io/${{ github.repository }}@${{ steps.build-amd64.outputs.digest }}
+            ghcr.io/${{ github.repository }}@${{ steps.build-arm64.outputs.digest }}
+
 
       # Pull request builds are not cached; and only built for AMD64
       - if: github.event_name == 'pull_request'
@@ -77,5 +109,6 @@ jobs:
           files: |
             ./docker-bake.hcl
           set: |
-            *.cache-from=type=registry,ref=ghcr.io/${{ github.repository }}:cache-${{ matrix.ROS_DISTRO }}
-            *.cache-to=type=registry,mode=max,ref=ghcr.io/${{ github.repository }}:cache-${{ matrix.ROS_DISTRO }}
+            *.platform = [ "linux/amd64" ]
+            *.cache-from=type=registry,ref=ghcr.io/${{ github.repository }}:cache-amd64-${{ matrix.ROS_DISTRO }}
+            *.cache-to=
