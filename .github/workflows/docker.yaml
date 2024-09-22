@@ -58,7 +58,6 @@ jobs:
           BUILDX_ROS_DISTRO: ${{ matrix.ROS_DISTRO }}
           BUILDX_GITHUB_REPO: ${{ github.repository }}
         with:
-          workdir: .docker
           files: |
             ./docker-bake.hcl
             ${{ steps.meta.outputs.bake-file }}
@@ -75,7 +74,6 @@ jobs:
           BUILDX_ROS_DISTRO: ${{ matrix.ROS_DISTRO }}
           BUILDX_GITHUB_REPO: ${{ github.repository }}
         with:
-          workdir: .docker
           files: |
             ./docker-bake.hcl
           set: |
