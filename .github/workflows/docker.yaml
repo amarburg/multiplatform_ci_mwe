@@ -20,6 +20,9 @@ jobs:
     permissions:
       packages: write
       contents: read
+    env:
+      BUILDX_ROS_DISTRO: ${{ matrix.ROS_DISTRO }}
+      BUILDX_GITHUB_REPO: ${{ github.repository }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -48,23 +51,18 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository }}
           bake-target: docker-metadata-action
-          tags: |
-            type=raw,value=${{ matrix.ROS_DISTRO }}
 
       # amd64 build
       - if: github.event_name == 'push'
         name: Build and push (non PR)
         uses: docker/bake-action@v5.7.0
-        id: build-amd64
-        env:
-          BUILDX_ROS_DISTRO: ${{ matrix.ROS_DISTRO }}
-          BUILDX_GITHUB_REPO: ${{ github.repository }}
         with:
           files: |
             ./docker-bake.hcl
             ${{ steps.meta.outputs.bake-file }}
           push: ${{ env.PUSH }}
           set: |
+            *.tags=ghcr.io/${{ github.repository }}:run${{ github.run_id }}-amd64
             *.platform=linux/amd64
             *.cache-from=type=registry,ref=ghcr.io/${{ github.repository }}:cache-amd64-${{ matrix.ROS_DISTRO }}
             *.cache-to=type=registry,mode=max,ref=ghcr.io/${{ github.repository }}:cache-amd64-${{ matrix.ROS_DISTRO }}
@@ -73,38 +71,42 @@ jobs:
       - if: github.event_name == 'push'
         name: Build and push (non PR)
         uses: docker/bake-action@v5.7.0
-        id: build-arm64
-        env:
-          BUILDX_ROS_DISTRO: ${{ matrix.ROS_DISTRO }}
-          BUILDX_GITHUB_REPO: ${{ github.repository }}
         with:
           files: |
             ./docker-bake.hcl
             ${{ steps.meta.outputs.bake-file }}
           push: ${{ env.PUSH }}
           set: |
+            *.tags=ghcr.io/${{ github.repository }}:run${{ github.run_id }}-arm64
             *.platform=linux/arm64
             *.cache-from=type=registry,ref=ghcr.io/${{ github.repository }}:cache-arm64-${{ matrix.ROS_DISTRO }}
             *.cache-to=type=registry,mode=max,ref=ghcr.io/${{ github.repository }}:cache-arm64-${{ matrix.ROS_DISTRO }}
+
+      # Is there similar
+      - name: Set Docker metadata for "combined image"
+        if: env.PUSH == 'true'
+        id: meta-manifest
+        uses: docker/metadata-action@v5.5.1
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=raw,value=${{ matrix.ROS_DISTRO }}
 
       # Merge amd64 and arm64 images
       - if: github.event_name == 'push'
         name: Create multi-platform manifest
         uses: int128/docker-manifest-create-action@v2
         with:
-          tags: ghcr.io/${{ github.repository }}:main
+          index-annotations: ${{ steps.meta-manifest.outputs.labels }}
+          tags: ${{ steps.meta-manifest.outputs.tags }}
           sources: |
-            ghcr.io/${{ github.repository }}@${{ steps.build-amd64.outputs.digest }}
-            ghcr.io/${{ github.repository }}@${{ steps.build-arm64.outputs.digest }}
-
+            ghcr.io/${{ github.repository }}:run${{ github.run_id }}-amd64
+            ghcr.io/${{ github.repository }}:run${{ github.run_id }}-arm64
 
       # Pull request builds are not cached; and only built for AMD64
       - if: github.event_name == 'pull_request'
         name: Build and push (PR)
         uses: docker/bake-action@v5.7.0
-        env:
-          BUILDX_ROS_DISTRO: ${{ matrix.ROS_DISTRO }}
-          BUILDX_GITHUB_REPO: ${{ github.repository }}
         with:
           files: |
             ./docker-bake.hcl

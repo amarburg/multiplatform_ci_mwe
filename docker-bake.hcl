@@ -35,7 +35,7 @@ target "mwe" {
     ROS_DISTRO = "${BUILDX_ROS_DISTRO}"
   }
   tags = [
-    "ghcr.io/${BUILDX_GITHUB_REPO}:${BUILDX_ROS_DISTRO}-ci"
+    "ghcr.io/${BUILDX_GITHUB_REPO}:${BUILDX_ROS_DISTRO}"
   ]
   labels = {
     "org.opencontainers.image.source" = "https://github.com/${BUILDX_GITHUB_REPO}"
