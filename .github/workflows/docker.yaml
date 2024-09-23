@@ -54,6 +54,7 @@ jobs:
 
       # amd64 build
       - if: github.event_name == 'push'
+      # Insert code here to run on amd64 builder
         name: Build and push (non PR)
         uses: docker/bake-action@v5.7.0
         with:
@@ -69,6 +70,7 @@ jobs:
 
       # arm64 build
       - if: github.event_name == 'push'
+        # Insert code here to run on arm64 builder
         name: Build and push (non PR)
         uses: docker/bake-action@v5.7.0
         with:
@@ -82,7 +84,7 @@ jobs:
             *.cache-from=type=registry,ref=ghcr.io/${{ github.repository }}:cache-arm64-${{ matrix.ROS_DISTRO }}
             *.cache-to=type=registry,mode=max,ref=ghcr.io/${{ github.repository }}:cache-arm64-${{ matrix.ROS_DISTRO }}
 
-      # Is there similar
+      # Generate metadata for the merge manifest
       - name: Set Docker metadata for "combined image"
         if: env.PUSH == 'true'
         id: meta-manifest
