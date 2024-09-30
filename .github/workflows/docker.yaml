@@ -56,7 +56,7 @@ jobs:
       - if: github.event_name == 'push'
       # Insert code here to run on amd64 builder
         name: Build and push (non PR)
-        uses: docker/bake-action@v5.7.0
+        uses: docker/bake-action@v5.9.0
         with:
           files: |
             ./docker-bake.hcl
@@ -72,7 +72,7 @@ jobs:
       - if: github.event_name == 'push'
         # Insert code here to run on arm64 builder
         name: Build and push (non PR)
-        uses: docker/bake-action@v5.7.0
+        uses: docker/bake-action@v5.9.0
         with:
           files: |
             ./docker-bake.hcl
@@ -108,7 +108,7 @@ jobs:
       # Pull request builds are not cached; and only built for AMD64
       - if: github.event_name == 'pull_request'
         name: Build and push (PR)
-        uses: docker/bake-action@v5.7.0
+        uses: docker/bake-action@v5.9.0
         with:
           files: |
             ./docker-bake.hcl
